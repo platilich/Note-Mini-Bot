@@ -1,4 +1,4 @@
-from utils.logger import logger
+from logger import logger
 import subprocess
 import sys
 import os

@@ -1,5 +1,5 @@
 from os import remove
-from utils.logger import logger
+from logger import logger
 
 def remove_old_files(input_file, output_file):
     try:

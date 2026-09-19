@@ -1,12 +1,17 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from handlers import router
 from dotenv import load_dotenv
+from handlers import router
+from pathlib import Path
 import os
 
 
 
-load_dotenv('.env')
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+load_dotenv(BASE_DIR / '.env')
+
 token = str(os.getenv('TOKEN'))
 
 

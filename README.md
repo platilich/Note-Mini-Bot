@@ -1,4 +1,4 @@
-# Note Mini Bot
+# VideoNoteBot
 
 A small Telegram bot that turns any video into a round video note. Send a video, get a circle back. No ads, no subscriptions.
 
@@ -95,7 +95,7 @@ FFMPEG_PATH=C:\ffmpeg\bin\ffmpeg.exe
 Run the bot:
 
 ```bash
-python main.py
+python bot/main.py
 ```
 
 Open the bot in Telegram, send `/start`, then send a video.

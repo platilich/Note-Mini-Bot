@@ -4,15 +4,13 @@ from aiogram import F, types
 from aiogram.types import FSInputFile, LinkPreviewOptions
 import asyncio
 from magic_round import convert_to_round
-from utils.remover import remove_old_files
+from remover import remove_old_files
 from db import Users
 
 
 
 router = Router()
 db = Users()
-
-db.init_db()
 
 
 
@@ -22,7 +20,12 @@ async def cmd_start(message: types.Message):
     name = message.from_user.first_name
     nickname = message.from_user.username
 
+    if db.is_banned(user_id):
+        return
+
+
     db.add_user(user_id, name, nickname)
+
 
     message_text = (
         f"Hi, <b>{name}</b>! ✨\n\n"
@@ -43,8 +46,26 @@ async def cmd_start(message: types.Message):
 
 @router.message(F.video | (F.document.mime_type.startswith("video/")))
 async def handle_video(message: types.Message):
+    user_id = message.from_user.id
+    name = message.from_user.first_name
+    nickname = message.from_user.username
+
+
+    if db.is_banned(user_id):
+        return
+
+
+
+    db.add_user(user_id, name, nickname)
+
+
+
     is_document = message.document is not None
     video_data = message.document if is_document else message.video
+
+
+    db.update_count(user_id)
+
 
     if not is_document and message.video.duration > 60:
         await message.answer("❌ The video is too long. The maximum length is 1 minute.")

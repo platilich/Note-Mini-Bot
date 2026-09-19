@@ -1,14 +1,15 @@
 import logging
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 import os
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+logs_dir = BASE_DIR / "logs"
+os.makedirs(logs_dir, exist_ok=True)
 
 
-os.makedirs("../logs", exist_ok=True)
-
-
-logger = logging.getLogger("whisper_bot")
+logger = logging.getLogger("VideoNoteBot")
 logger.setLevel(logging.INFO)
 
 
@@ -25,7 +26,7 @@ logger.addHandler(console_handler)
 
 
 file_handler = RotatingFileHandler(
-    "../logs/bot.log",
+    logs_dir / "bot.log",
     maxBytes=5 * 1024 * 1024,  # 5 МБ
     backupCount=3,             # хранить 3 старых файла
     encoding="utf-8"
