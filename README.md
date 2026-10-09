@@ -82,7 +82,6 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 
-
 ```
 TOKEN=your-telegram-bot-token
 ```
