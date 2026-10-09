@@ -23,8 +23,8 @@ Built with [aiogram 3](https://docs.aiogram.dev/) and [FFmpeg](https://ffmpeg.or
         <td align="center"><b>Send a Video -> Get a video note</b></td>
     </tr>
     <tr>
-        <td align="center"><img src="screenshots/third.png" alt="Example of voice message transcription" width="400"/></td>
-        <td align="center"><img src="screenshots/fourth.jpeg" alt="Example of video note transcription" width="400"/></td>
+        <td align="center"><img src="screenshots/fourth.jpeg" alt="Example of voice message transcription" width="400"/></td>
+        <td align="center"><img src="screenshots/third.png" alt="Example of video note transcription" width="400"/></td>
     </tr>
     <tr>
         <td align="center"><b>Voice Message Transcription</b></td>
