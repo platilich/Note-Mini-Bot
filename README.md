@@ -104,7 +104,7 @@ Create `.env` in the project root:
 TOKEN=your_telegram_bot_token
 SECRET_KEY=your_django_secret_key
 DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.com
+ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
 Generate a secret key:
@@ -152,78 +152,285 @@ http://localhost:8000/admin/
 
 Log in with your superuser username and password.
 
-### Production with Gunicorn
+## Production setup (Linux server, free domain, free HTTPS)
 
-For production, use Gunicorn as the web server.
+### Step 1: Prepare server
 
-Install Gunicorn:
+You need a Linux server (VPS or dedicated). You can get a free VPS from:
+- **Replit** (free tier, but limited)
+- **Railway** (free credits)
+- **Oracle Cloud** (free tier, always free)
+- **Vultr** (free $2.50/month credit, enough to test)
+
+Or buy a cheap one from:
+- **Hetzner** (€3/month)
+- **DigitalOcean** (€4/month)
+- **Linode** (€5/month)
+
+SSH into your server. If using Linux (Ubuntu 20.04+):
 
 ```bash
+ssh root@your_server_ip
+```
+
+### Step 2: Get a free domain
+
+Use one of these free domain services:
+- **Freenom** - free .tk domain
+- **No-ip** - dynamic DNS, free
+- **DuckDNS** - free subdomain
+- **Cloudflare** - free domain forwarding
+
+Or use your server's IP directly (not recommended, but works for testing).
+
+**Example with Freenom:**
+1. Go to freenom.com
+2. Register free .tk domain
+3. Point it to your server IP in DNS settings
+
+**Example with DuckDNS (simpler):**
+1. Go to duckdns.org
+2. Create account
+3. Add your domain name
+4. Put your server IP
+5. Your domain: `yourname.duckdns.org`
+
+### Step 3: Install everything on server
+
+```bash
+# Update system
+apt update && apt upgrade -y
+
+# Install Python and FFmpeg
+apt install -y python3.10 python3.10-venv python3-pip ffmpeg
+
+# Install Nginx
+apt install -y nginx
+
+# Install certbot for Let's Encrypt (free HTTPS)
+apt install -y certbot python3-certbot-nginx
+
+# Create a user for the bot (optional, but better)
+useradd -m -s /bin/bash videobot
+su - videobot
+```
+
+### Step 4: Clone and setup bot on server
+
+```bash
+# Stay as 'videobot' user
+git clone https://github.com/platilich/Note-Mini-Bot.git
+cd Note-Mini-Bot
+
+# Create virtual environment
+python3.10 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 pip install gunicorn
 ```
 
-Run with Gunicorn:
+### Step 5: Create `.env` file
+
+Edit `.env` with your settings:
 
 ```bash
-gunicorn --bind 0.0.0.0:8000 --workers 4 core.wsgi:application
+nano .env
 ```
 
-This starts the Django app on port 8000.
-
-### Add HTTPS with Nginx
-
-To add HTTPS, put Nginx in front of Gunicorn.
-
-1. Install Nginx (or use your server's package manager)
-2. Create an Nginx config that proxies to `127.0.0.1:8000`
-3. Add SSL with Let's Encrypt
-
-Update your `.env`:
+Paste this (replace with your values):
 
 ```env
-ALLOWED_HOSTS=yourdomain.com
-CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+TOKEN=your_telegram_bot_token_here
+SECRET_KEY=your_secret_key_here_get_it_from_python_command
 DEBUG=False
+ALLOWED_HOSTS=yourdomain.duckdns.org,your_server_ip
 ```
 
-Example Nginx config:
+Generate SECRET_KEY:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+Copy the output and paste it in `.env`.
+
+Save file: `Ctrl + X`, then `Y`, then `Enter`.
+
+### Step 6: Prepare Django for production
+
+```bash
+# Run migrations
+python manage.py migrate
+
+# Create superuser
+python manage.py createsuperuser
+# Enter: username, email, password
+
+# Collect static files
+python manage.py collectstatic --noinput
+```
+
+### Step 7: Setup Gunicorn socket (systemd)
+
+Create systemd service file:
+
+```bash
+sudo nano /etc/systemd/system/videobot.service
+```
+
+Paste this (replace `videobot` if you used different user):
+
+```ini
+[Unit]
+Description=VideoNoteBot Gunicorn
+After=network.target
+
+[Service]
+Type=notify
+User=videobot
+Group=www-data
+WorkingDirectory=/home/videobot/Note-Mini-Bot
+Environment="PATH=/home/videobot/Note-Mini-Bot/venv/bin"
+EnvironmentFile=/home/videobot/Note-Mini-Bot/.env
+ExecStart=/home/videobot/Note-Mini-Bot/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/run/videobot.sock \
+    core.wsgi:application
+
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Save: `Ctrl + X`, then `Y`, then `Enter`.
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable videobot
+sudo systemctl start videobot
+
+# Check status
+sudo systemctl status videobot
+```
+
+### Step 8: Setup Nginx
+
+Create Nginx config:
+
+```bash
+sudo nano /etc/nginx/sites-available/videobot
+```
+
+Paste this (replace `yourdomain.duckdns.org` with your domain):
 
 ```nginx
 server {
-    listen 443 ssl;
-    server_name yourdomain.com;
+    listen 80;
+    server_name yourdomain.duckdns.org your_server_ip;
 
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    client_max_body_size 50M;
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://unix:/run/videobot.sock;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-}
 
-server {
-    listen 80;
-    server_name yourdomain.com;
-    return 301 https://$server_name$request_uri;
+    location /static/ {
+        alias /home/videobot/Note-Mini-Bot/staticfiles/;
+    }
+
+    location /media/ {
+        alias /home/videobot/Note-Mini-Bot/media/;
+    }
 }
 ```
 
-Then run Gunicorn in the background:
+Save: `Ctrl + X`, then `Y`, then `Enter`.
+
+Enable:
 
 ```bash
-gunicorn --bind 127.0.0.1:8000 --workers 4 --daemon core.wsgi:application
+sudo ln -s /etc/nginx/sites-available/videobot /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### Step 9: Get free HTTPS (Let's Encrypt)
+
+```bash
+sudo certbot --nginx -d yourdomain.duckdns.org
+```
+
+Follow the prompts. Certbot will:
+1. Ask your email
+2. Agree to terms
+3. Automatically update Nginx config with HTTPS
+
+Certificate auto-renews every 90 days.
+
+### Step 10: Final check
+
+```bash
+# Check if bot service is running
+sudo systemctl status videobot
+
+# Check Nginx
+sudo systemctl status nginx
+
+# Test Nginx config
+sudo nginx -t
+
+# Check logs
+sudo journalctl -u videobot -n 20
+```
+
+Open in browser:
+
+```text
+https://yourdomain.duckdns.org/admin/
+```
+
+Log in with your superuser credentials.
+
+### Troubleshooting
+
+**Bot not running:**
+```bash
+sudo journalctl -u videobot -f
+```
+
+**Nginx errors:**
+```bash
+sudo tail -f /var/log/nginx/error.log
+```
+
+**Certbot issues:**
+```bash
+sudo certbot --nginx --dry-run -d yourdomain.duckdns.org
+```
+
+**Restart everything:**
+```bash
+sudo systemctl restart videobot
+sudo systemctl restart nginx
 ```
 
 ## Notes
 
-- For production, always use HTTPS and a domain name
+- For production, always use HTTPS
 - Keep `.env` secret and do not commit it to Git
-- Do not use Django's development server in production
-- Make sure Gunicorn and Nginx start on system restart
+- Certbot renews automatically
+- If you use DuckDNS, keep updating your IP (it auto-updates if you refresh the page)
+- Gunicorn restarts on system reboot (systemd auto-starts it)
 
 ## License
 
