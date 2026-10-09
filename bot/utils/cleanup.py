@@ -3,15 +3,10 @@ from bot.logger import logger
 
 
 
-def remove_temp_files(input_file, output_file):
+def remove_temp_files(files):
     try:
-        remove(input_file)
-
-    except Exception as e:
-        logger.info(e)
-
-    try:
-        remove(output_file)
+        for file in files:
+            remove(file)
 
     except Exception as e:
         logger.info(e)

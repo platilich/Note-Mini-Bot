@@ -1,15 +1,18 @@
 import asyncio
+import os
+
 from aiogram import Router, F, types, Bot
 from aiogram.filters import Command
 from aiogram.types import FSInputFile
+from torch.nn.functional import fold
 
 from .db import Users
 from .logger import logger
 
 
-from utils.cleanup import remove_temp_files
-from utils.video_note import convert_to_video_note
-from utils.audio_recognation import transcription
+from .utils.cleanup import remove_temp_files
+from .utils.video_note import convert_to_video_note
+from .utils.audio_recognation import transcription
 
 
 
@@ -46,7 +49,7 @@ async def cmd_start(message: types.Message):
 
 
 
-@router.message(F.video | (F.document.mime_type.startswith("temp/")))
+@router.message(F.video | (F.document.mime_type.startswith("video/")))
 async def handle_video(message: types.Message, bot: Bot):
     user_id = message.from_user.id
     name = message.from_user.first_name
@@ -82,6 +85,7 @@ async def handle_video(message: types.Message, bot: Bot):
         file_info = await message.bot.get_file(video_data.file_id)
         await message.bot.download_file(str(file_info.file_path), input_file)
 
+
         success = await asyncio.to_thread(convert_to_video_note, input_file, output_file)
 
         if not success:
@@ -90,14 +94,15 @@ async def handle_video(message: types.Message, bot: Bot):
             return
 
 
+
         await bot.send_chat_action(message.chat.id, action="upload_video_note")
 
 
         video_note = FSInputFile(output_file)
         await message.answer_video_note(video_note)
 
-        db.update_count(user_id)
 
+        db.update_count(user_id)
 
 
 
@@ -107,7 +112,7 @@ async def handle_video(message: types.Message, bot: Bot):
 
 
     finally:
-        remove_temp_files(input_file, output_file)
+        remove_temp_files([input_file, output_file])
 
 
 
@@ -115,28 +120,34 @@ async def handle_video(message: types.Message, bot: Bot):
 
 
 
-@router.message(F.video_note, F.voice)
+@router.message(F.voice | F.video_note)
 async def handle_video_note(message: types.Message, bot: Bot):
     user_id = message.from_user.id
     name = message.from_user.first_name
     nickname = message.from_user.username
 
-
     if db.is_banned(user_id):
         return
+
+
+    print('получили запрос на обработку видео заметки')
 
 
     db.add_user(user_id, name, nickname)
 
 
-    media = message.voice or message.video_note
-    file_id = media.file_id
 
+    ext = 'ogg' if message.voice else 'mp4'
+    file_obj = message.voice or message.video_note
 
+    os.makedirs('temp', exist_ok=True)
 
-    file_path = await bot.get_file(f'temp/{user_id}_{file_id}')
-    result = await asyncio.to_thread(transcription, file_path)
+    destination = f"temp/{message.from_user.id}_{message.message_id}.{ext}"
 
+    file_info = await bot.get_file(file_obj.file_id)
+    await bot.download_file(file_info.file_path, destination=destination)
+
+    result = await asyncio.to_thread(transcription,  destination)
 
     try:
         await message.reply(
@@ -151,3 +162,7 @@ async def handle_video_note(message: types.Message, bot: Bot):
 
     except Exception as e:
         logger.error(f'error when sending a message to the user: {e}')
+
+
+    finally:
+        remove_temp_files([destination])
