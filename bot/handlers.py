@@ -3,8 +3,8 @@ import os
 
 from aiogram import Router, F, types, Bot
 from aiogram.filters import Command
-from aiogram.types import FSInputFile
-from torch.nn.functional import fold
+from aiogram.types import FSInputFile, ReactionTypeEmoji
+
 
 from .db import Users
 from .logger import logger
@@ -13,7 +13,6 @@ from .logger import logger
 from .utils.cleanup import remove_temp_files
 from .utils.video_note import convert_to_video_note
 from .utils.audio_recognation import transcription
-
 
 
 router = Router()
@@ -76,6 +75,10 @@ async def handle_video(message: types.Message, bot: Bot):
         return
 
 
+
+    await message.react([ReactionTypeEmoji(emoji='❤️')])
+
+
     input_file = f"downloads_{user_id}.mp4"
     output_file = f"output_{user_id}.mp4"
 
@@ -83,7 +86,7 @@ async def handle_video(message: types.Message, bot: Bot):
 
     try:
         file_info = await message.bot.get_file(video_data.file_id)
-        await message.bot.download_file(str(file_info.file_path), input_file)
+        await bot.download_file(str(file_info.file_path), input_file)
 
 
         success = await asyncio.to_thread(convert_to_video_note, input_file, output_file)
@@ -136,6 +139,8 @@ async def handle_video_note(message: types.Message, bot: Bot):
     db.add_user(user_id, name, nickname)
 
 
+    await message.react([ReactionTypeEmoji(emoji='❤️')])
+
 
     ext = 'ogg' if message.voice else 'mp4'
     file_obj = message.voice or message.video_note
@@ -147,11 +152,13 @@ async def handle_video_note(message: types.Message, bot: Bot):
     file_info = await bot.get_file(file_obj.file_id)
     await bot.download_file(file_info.file_path, destination=destination)
 
+    await bot.send_chat_action(chat_id=message.chat.id, action='typing')
+
     result = await asyncio.to_thread(transcription,  destination)
 
     try:
         await message.reply(
-            f'<code>{result}</code>\n\n\n<b><a href="https://github.com/platilich/Telegram-Bot-Voice-Transcription">GitHub</a></b>',
+            f'<code>{result}</code>\n\n\n<b><a href="https://github.com/platilich/NoteCircle">GitHub</a></b>',
             disable_web_page_preview=True,
             parse_mode='HTML'
         )

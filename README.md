@@ -84,9 +84,13 @@ Paste this:
 
 ```
 TOKEN=your_telegram_bot_token_here
+API_KEY=your_api_key_from_groq
 ```
 
 Get your bot token from [@BotFather](https://t.me/BotFather) on Telegram.
+Get your api key from [@BotFather](https://console.groq.com/keys).
+
+
 
 Save: press `Ctrl + X`, then `Y`, then `Enter`.
 
