@@ -1,7 +1,9 @@
 from os import remove
-from logger import logger
+from bot.logger import logger
 
-def remove_old_files(input_file, output_file):
+
+
+def remove_temp_files(input_file, output_file):
     try:
         remove(input_file)
 

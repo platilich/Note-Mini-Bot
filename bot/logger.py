@@ -27,8 +27,8 @@ logger.addHandler(console_handler)
 
 file_handler = RotatingFileHandler(
     logs_dir / "bot.log",
-    maxBytes=5 * 1024 * 1024,  # 5 МБ
-    backupCount=3,             # хранить 3 старых файла
+    maxBytes=5 * 1024 * 1024,
+    backupCount=3,
     encoding="utf-8"
 )
 

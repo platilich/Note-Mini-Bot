@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from logger import logger
+from .logger import logger
 
 
 class Users:
@@ -88,7 +88,3 @@ class Users:
         except Exception as e:
             logger.error(f'DB | error when checking ban status: {e}')
             return False
-
-
-
-

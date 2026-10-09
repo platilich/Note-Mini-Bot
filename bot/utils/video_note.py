@@ -1,17 +1,17 @@
-from logger import logger
+from bot.logger import logger
 import subprocess
 import sys
 import os
 
 
 
-def convert_to_round(input_path: str, output_path: str) -> bool:
+def convert_to_video_note(input_file, output_file):
     # Use ffmpeg from PATH so the bot works on any OS.
     # You can override it with the FFMPEG_PATH env variable if needed.
     ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")
 
     cmd = [
-        ffmpeg_path, "-y", "-i", input_path,
+        ffmpeg_path, "-y", "-i", input_file,
         "-map", "0:v:0",
         "-map", "0:a:1?",
         "-map", "0:a:0?",
@@ -25,12 +25,12 @@ def convert_to_round(input_path: str, output_path: str) -> bool:
         "-c:a", "aac",
         "-ar", "44100",
         "-b:a", "128k",
-        output_path
+        output_file
     ]
 
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if not (os.path.exists(output_path) and os.path.getsize(output_path) > 0):
+    if not (os.path.exists(output_file) and os.path.getsize(output_file) > 0):
         print("\n=== ERROR FFMPEG ===", file=sys.stderr)
         print(result.stderr.decode('utf-8'), file=sys.stderr)
         print("=====================\n", file=sys.stderr)

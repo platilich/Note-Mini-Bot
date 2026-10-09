@@ -1,11 +1,15 @@
-from aiogram import Router
-from aiogram.filters import Command
-from aiogram import F, types
-from aiogram.types import FSInputFile, LinkPreviewOptions
 import asyncio
-from magic_round import convert_to_round
-from remover import remove_old_files
-from db import Users
+from aiogram import Router, F, types, Bot
+from aiogram.filters import Command
+from aiogram.types import FSInputFile
+
+from .db import Users
+from .logger import logger
+
+
+from utils.cleanup import remove_temp_files
+from utils.video_note import convert_to_video_note
+from utils.audio_recognation import transcription
 
 
 
@@ -23,7 +27,6 @@ async def cmd_start(message: types.Message):
     if db.is_banned(user_id):
         return
 
-
     db.add_user(user_id, name, nickname)
 
 
@@ -35,20 +38,20 @@ async def cmd_start(message: types.Message):
         "<b>Send me a video to start!</b> 💫"
     )
 
-
     await message.answer(
-        message_text,
-        parse_mode='HTML',
-        link_preview_options=LinkPreviewOptions(is_disabled=True)
-        )
+        text=message_text,
+        parse_mode="HTML",
+        disable_web_page_preview=True
+    )
 
 
 
-@router.message(F.video | (F.document.mime_type.startswith("video/")))
-async def handle_video(message: types.Message):
+@router.message(F.video | (F.document.mime_type.startswith("temp/")))
+async def handle_video(message: types.Message, bot: Bot):
     user_id = message.from_user.id
     name = message.from_user.first_name
     nickname = message.from_user.username
+
 
 
     if db.is_banned(user_id):
@@ -59,48 +62,92 @@ async def handle_video(message: types.Message):
     db.add_user(user_id, name, nickname)
 
 
-
     is_document = message.document is not None
     video_data = message.document if is_document else message.video
 
 
-    db.update_count(user_id)
 
 
     if not is_document and message.video.duration > 60:
         await message.answer("❌ The video is too long. The maximum length is 1 minute.")
         return
 
-    processing_msg = await message.answer("🔄 Processing the video, hang on a moment...")
 
-    input_file = f"downloads_{message.from_user.id}.mp4"
-    output_file = f"output_{message.from_user.id}.mp4"
+    input_file = f"downloads_{user_id}.mp4"
+    output_file = f"output_{user_id}.mp4"
+
 
 
     try:
         file_info = await message.bot.get_file(video_data.file_id)
         await message.bot.download_file(str(file_info.file_path), input_file)
 
-        success = await asyncio.to_thread(convert_to_round, input_file, output_file)
+        success = await asyncio.to_thread(convert_to_video_note, input_file, output_file)
 
         if not success:
-            await message.answer("❌ Не удалось обработать видео. Посмотри лог в терминале — теперь он там появится!")
-            await processing_msg.delete()
+            await message.answer("Unable to process. Something went wrong.")
+            logger.error(f'Something went wrong')
             return
+
+
+        await bot.send_chat_action(message.chat.id, action="upload_video_note")
 
 
         video_note = FSInputFile(output_file)
         await message.answer_video_note(video_note)
-        await processing_msg.delete()
+
+        db.update_count(user_id)
+
 
 
 
     except Exception as e:
-        await message.answer(f"⚠️ Произошла ошибка при обработке: {e}")
-        if 'processing_msg' in locals():
-            await processing_msg.delete()
-
+        await message.answer("Unable to process. Something went wrong.")
+        logger.error(f'Something went wrong {e}')
 
 
     finally:
-        remove_old_files(input_file, output_file)
+        remove_temp_files(input_file, output_file)
+
+
+
+
+
+
+
+@router.message(F.video_note, F.voice)
+async def handle_video_note(message: types.Message, bot: Bot):
+    user_id = message.from_user.id
+    name = message.from_user.first_name
+    nickname = message.from_user.username
+
+
+    if db.is_banned(user_id):
+        return
+
+
+    db.add_user(user_id, name, nickname)
+
+
+    media = message.voice or message.video_note
+    file_id = media.file_id
+
+
+
+    file_path = await bot.get_file(f'temp/{user_id}_{file_id}')
+    result = await asyncio.to_thread(transcription, file_path)
+
+
+    try:
+        await message.reply(
+            f'<code>{result}</code>\n\n\n<b><a href="https://github.com/platilich/Telegram-Bot-Voice-Transcription">GitHub</a></b>',
+            disable_web_page_preview=True,
+            parse_mode='HTML'
+        )
+
+        db.update_count(user_id)
+
+
+
+    except Exception as e:
+        logger.error(f'error when sending a message to the user: {e}')

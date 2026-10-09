@@ -1,0 +1,72 @@
+{% load static %}
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Admin Panel - Note-Mini-Bot</title>
+        <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    </head>
+
+    <body>
+        <div class="header">
+            <div class="title">Note-Mini-Bot</div>
+            <form action="/admin/logout/" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">Logout</button>
+            </form>
+        </div>
+
+        <main>
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="message">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="users-grid">
+                {% for user in users %}
+                <div class="user-card {% if user.is_banned %}banned{% endif %}">
+                    <div class="user-info">
+                        <h3>ID: {{ user.user_id }}</h3>
+                        <p><strong>Name:</strong> {{ user.name|default:"-" }}</p>
+                        <p><strong>Nickname:</strong> {{ user.nickname|default:"-" }}</p>
+                        <p><strong>Videos:</strong> {{ user.count }}</p>
+                        <p><strong>Registered:</strong> {{ user.created_at|date:"Y-m-d H:i" }}</p>
+                        <p><strong>Status:</strong> {% if user.is_banned %}Banned{% else %}Active{% endif %}</p>
+                    </div>
+                    <div class="user-actions">
+                        {% if user.is_banned %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="unban">
+                            <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                            <button type="submit" class="unban-btn">Unban</button>
+                        </form>
+                        {% else %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="ban">
+                            <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                            <button type="submit" class="ban-btn">Ban</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+
+
+        <div class="footer">
+            <div class="footer-left">Plat Ilich</div>
+            <div class="footer-right">
+                <a href="https://github.com/platilich" target="_blank">GitHub</a>
+            </div>
+        </div>
+
+        <script src="{% static 'js/script.js' %}"></script>
+    </body>
+</html>
