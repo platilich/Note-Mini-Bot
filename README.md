@@ -84,7 +84,6 @@ Paste this:
 
 ```
 TOKEN=your_telegram_bot_token_here
-FFMPEG_PATH=/usr/bin/ffmpeg
 ```
 
 Get your bot token from [@BotFather](https://t.me/BotFather) on Telegram.
