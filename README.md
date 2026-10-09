@@ -1,9 +1,9 @@
-# Note-Mini-Bot
+# NoteCircle
 
 Launching a bot on a VPS with systemd settings
 
 
-## Feautures
+## Features
 - Send a video and get a round video note
 - Send a voice message or video note and get text
 
@@ -22,7 +22,7 @@ Launching a bot on a VPS with systemd settings
     <td align="center"><img src="screenshots/third.png" alt="Example of video note transcription" width="400"/></td>
   </tr>
   <tr>
-    <td align="center"><b>Voice Message Transcription</b></td>
+    <td align="center"><b>Voice message Transcription</b></td>
     <td align="center"><b>Video Note Transcription</b></td>
   </tr>
 </table>
@@ -60,8 +60,8 @@ sudo apt install -y python3 python3-venv python3-pip ffmpeg git
 
 ```bash
 cd /home/your_username
-git clone https://github.com/platilich/Note-Mini-Bot.git
-cd Note-Mini-Bot
+git clone https://github.com/platilich/NoteCircle.git
+cd NoteCircle
 ```
 
 Replace `your_username` with your actual server username.
@@ -84,6 +84,7 @@ Paste this:
 
 ```
 TOKEN=your_telegram_bot_token_here
+FFMPEG_PATH=/usr/bin/ffmpeg
 ```
 
 Get your bot token from [@BotFather](https://t.me/BotFather) on Telegram.
@@ -91,33 +92,39 @@ Get your bot token from [@BotFather](https://t.me/BotFather) on Telegram.
 Save: press `Ctrl + X`, then `Y`, then `Enter`.
 
 
-## Step 6: Systemd
+## Step 6: Create DB
+
+```
+python manage.py migrate
+```
+
+## Step 7: Systemd
 
 The bot will start automatically when the server starts.
 
-### Step 1: Create service file
+### Create service file
 
 ```bash
-sudo nano /etc/systemd/system/bot.service
+sudo nano /etc/systemd/system/NoteCircle.service
 ```
 
-### Step 2: Paste this text
+### Paste this text
 
 Replace these:
 - `your_username` — your server username
-- `/home/your_username/Note-Mini-Bot` — full path to the bot directory you can see your directory with command ```pwd```
+- `/home/your_username/NoteCircle` — full path to the bot directory you can see your directory with command ```pwd```
 
 ```ini
 [Unit]
-Description=Bot
+Description=NoteCircle
 After=network.target
 
 [Service]
 Type=simple
 User=your_username
-WorkingDirectory=/home/your_username/Note-Mini-Bot
-EnvironmentFile=/home/your_username/Note-Mini-Bot/.env
-ExecStart=/home/your_username/Note-Mini-Bot/venv/bin/python bot/main.py
+WorkingDirectory=/home/your_username/NoteCircle
+EnvironmentFile=/home/your_username/NoteCircle/.env
+ExecStart=/home/your_username/NoteCircle/venv/bin/python bot/main.py
 Restart=always
 RestartSec=5
 
@@ -127,12 +134,12 @@ WantedBy=multi-user.target
 
 Save: press `Ctrl + X`, then `Y`, then `Enter`.
 
-### Step 3: Enable auto start
+### Enable auto start
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable bot
-sudo systemctl start bot
+sudo systemctl enable NoteCircle
+sudo systemctl start NoteCircle
 ```
 
 Done. The bot now runs in the background and restarts automatically.
@@ -144,7 +151,7 @@ ___
 ### Check status
 
 ```bash
-sudo systemctl status bot
+sudo systemctl status NoteCircle
 ```
 
 You should see: `active (running)`.
@@ -152,7 +159,7 @@ You should see: `active (running)`.
 ### See live logs
 
 ```bash
-sudo journalctl -u bot -f
+sudo journalctl -u NoteCircle -f
 ```
 
 Stop viewing: press `Ctrl + C`.
@@ -162,13 +169,13 @@ Stop viewing: press `Ctrl + C`.
 ### Stop the bot
 
 ```bash
-sudo systemctl stop bot
+sudo systemctl stop NoteCircle
 ```
 
 ### Start the bot
 
 ```bash
-sudo systemctl start bot
+sudo systemctl start NoteCircle
 ```
 
 ___
