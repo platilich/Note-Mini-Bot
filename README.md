@@ -38,7 +38,6 @@ It is made with Python, aiogram, FFmpeg, and Django admin.
 - Python 3.10+
 - FFmpeg
 - Telegram bot token from @BotFather
-- Docker (optional, for Docker setup)
 
 ## Install FFmpeg
 
@@ -139,9 +138,7 @@ You will be asked for:
 - email
 - password
 
-Then run the admin:
-
-### Local run
+### Local run (development)
 
 ```bash
 python manage.py runserver 0.0.0.0:8000
@@ -155,83 +152,78 @@ http://localhost:8000/admin/
 
 Log in with your superuser username and password.
 
-### HTTPS
+### Production with Gunicorn
 
-For production, do not use `runserver` directly.
+For production, use Gunicorn as the web server.
 
-Use a real web server with HTTPS, for example:
-
-- Nginx
-- Apache
-- Traefik
-- Let's Encrypt
-
-A simple setup is:
-
-1. Run Django with Gunicorn
-2. Put Nginx in front of it
-3. Add SSL with Let's Encrypt
-
-Example:
+Install Gunicorn:
 
 ```bash
 pip install gunicorn
+```
 
+Run with Gunicorn:
+
+```bash
 gunicorn --bind 0.0.0.0:8000 --workers 4 core.wsgi:application
 ```
 
-Then set up Nginx to proxy to `127.0.0.1:8000` and enable HTTPS.
+This starts the Django app on port 8000.
 
-Important:
+### Add HTTPS with Nginx
+
+To add HTTPS, put Nginx in front of Gunicorn.
+
+1. Install Nginx (or use your server's package manager)
+2. Create an Nginx config that proxies to `127.0.0.1:8000`
+3. Add SSL with Let's Encrypt
+
+Update your `.env`:
 
 ```env
 ALLOWED_HOSTS=yourdomain.com
 CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+DEBUG=False
 ```
 
-## Docker
+Example Nginx config:
 
-You can also run the project with Docker.
+```nginx
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
 
-Example:
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+Then run Gunicorn in the background:
 
 ```bash
-docker build -t videonotebot .
-docker run --env-file .env -p 8000:8000 videonotebot
-```
-
-If you use Docker Compose, make a file called `docker-compose.yml` like this:
-
-```yaml
-version: '3.9'
-
-services:
-  app:
-    build: .
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    command: python manage.py runserver 0.0.0.0:8000
-```
-
-Then run:
-
-```bash
-docker compose up --build
-```
-
-Open:
-
-```text
-http://localhost:8000/admin/
+gunicorn --bind 127.0.0.1:8000 --workers 4 --daemon core.wsgi:application
 ```
 
 ## Notes
 
-- For a real production site, use HTTPS and a domain name.
-- Keep `.env` secret.
-- Do not use the Django development server in public production.
+- For production, always use HTTPS and a domain name
+- Keep `.env` secret and do not commit it to Git
+- Do not use Django's development server in production
+- Make sure Gunicorn and Nginx start on system restart
 
 ## License
 
