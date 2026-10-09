@@ -7,21 +7,31 @@ Built with [aiogram 3](https://docs.aiogram.dev/) and [FFmpeg](https://ffmpeg.or
 ## Features
 
 - Send a video (or a video file) and get a round video note
+- Send voice messages or video notes and get instant transcripts
 - Videos longer than 60 seconds are rejected (Telegram limit)
 - Temporary files are deleted after conversion
 
 ## Screenshots
 
 <table>
-  <tr>
-    <td align="center"><img src="screenshots/start.png" alt="Start" width="400"/></td>
-    <td align="center"><img src="screenshots/conversion.jpeg" alt="Conversion" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>/start</b></td>
-    <td align="center"><b>Send a video → get a round note</b></td>
-  </tr>
+    <tr>
+        <td><img src="screenshots/start.png" alt="Photo showing how the /start command works" width="400"/></td>
+        <td align="center"><img src="screenshots/conversion.jpeg" alt="Example: send a video and get a transcript" width="400"/></td>
+    </tr>
+    <tr>
+        <td align="center"><b>/start</b></td>
+        <td align="center"><b>Send a Video -> Get a video note</b></td>
+    </tr>
+    <tr>
+        <td align="center"><img src="screenshots/third.png" alt="Example of voice message transcription" width="400"/></td>
+        <td align="center"><img src="screenshots/fourth.jpeg" alt="Example of video note transcription" width="400"/></td>
+    </tr>
+    <tr>
+        <td align="center"><b>Voice Message Transcription</b></td>
+        <td align="center"><b>Video Note Transcription</b></td>
+    </tr>
 </table>
+
 
 ## Requirements
 
@@ -80,17 +90,32 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the project root:
-
-```
-TOKEN=your-telegram-bot-token
-```
-
 Optional, if FFmpeg is not on PATH:
 
 ```
 FFMPEG_PATH=C:\ffmpeg\bin\ffmpeg.exe
 ```
+
+
+### Set up .env
+Create a `.env` file in the project root:
+
+```
+TOKEN=your_telegram_bot_token
+```
+
+Generate secret token for django:
+
+``
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+``
+
+Past your secret key like this:
+
+```
+SECRET_KEY=your_secret_key
+```
+
 
 Run the bot:
 
@@ -98,7 +123,7 @@ Run the bot:
 python bot/main.py
 ```
 
-Open the bot in Telegram, send `/start`, then send a video.
+Open the bot in Telegram, send /start, then try sending a video note, voice message, or video.
 
 ## License
 
