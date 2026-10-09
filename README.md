@@ -2,6 +2,31 @@
 
 Launching a bot on a VPS with systemd settings
 
+
+## Feautures
+- Send a video and get a round video note
+- Send a voice message or video note and get text
+
+## Screenshots
+<table>
+  <tr>
+    <td><img src="screenshots/start.png" alt="Photo showing how the /start command works" width="400"/></td>
+    <td align="center"><img src="screenshots/conversion.jpeg" alt="Example: send a video and get a transcript" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>/start</b></td>
+    <td align="center"><b>Send a Video → Get a video note</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/fourth.jpeg" alt="Example of voice message transcription" width="400"/></td>
+    <td align="center"><img src="screenshots/third.png" alt="Example of video note transcription" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Voice Message Transcription</b></td>
+    <td align="center"><b>Video Note Transcription</b></td>
+  </tr>
+</table>
+
 ## Dependencies
 
 - A Linux server (Ubuntu 20.04+, Debian 11+, etc.)
@@ -14,6 +39,7 @@ Launching a bot on a VPS with systemd settings
 - Aiogram
 - Sqlite3
 - Django
+
 
 ## Step 1: Connect to your server
 
